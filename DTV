@@ -1,0 +1,283 @@
+# ==========================================
+# PHISHING WEBSITE DETECTION
+# Complete EDA + Machine Learning
+# ==========================================
+
+# Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# ------------------------------------------
+# Load Dataset
+# ------------------------------------------
+
+df = pd.read_csv("phishing.csv")
+
+# Drop Index column
+df.drop("Index", axis=1, inplace=True)
+
+# ------------------------------------------
+# Basic Information
+# ------------------------------------------
+
+print("="*60)
+print("First 5 Rows")
+print("="*60)
+print(df.head())
+
+print("\nDataset Shape")
+print(df.shape)
+
+print("\nColumns")
+print(df.columns)
+
+print("\nMissing Values")
+print(df.isnull().sum())
+
+print("\nDataset Info")
+print(df.info())
+
+print("\nStatistics")
+print(df.describe())
+
+# ------------------------------------------
+# Class Distribution
+# ------------------------------------------
+
+plt.figure(figsize=(6,5))
+sns.countplot(x="class", data=df)
+plt.title("Phishing Website Distribution")
+plt.xlabel("Class")
+plt.ylabel("Count")
+plt.show()
+
+# ------------------------------------------
+# Pie Chart
+# ------------------------------------------
+
+plt.figure(figsize=(6,6))
+
+df["class"].value_counts().plot(
+    kind="pie",
+    autopct="%1.1f%%",
+    startangle=90,
+    colors=["skyblue","orange"]
+)
+
+plt.ylabel("")
+plt.title("Website Classification")
+plt.show()
+
+# ------------------------------------------
+# Correlation Heatmap
+# ------------------------------------------
+
+plt.figure(figsize=(18,15))
+
+sns.heatmap(
+    df.corr(numeric_only=True),
+    cmap="coolwarm"
+)
+
+plt.title("Correlation Heatmap")
+
+plt.show()
+
+# ------------------------------------------
+# Histogram
+# ------------------------------------------
+
+df.hist(
+    figsize=(20,20),
+    bins=20
+)
+
+plt.tight_layout()
+
+plt.show()
+
+# ------------------------------------------
+# Box Plot
+# ------------------------------------------
+
+plt.figure(figsize=(18,8))
+
+sns.boxplot(data=df)
+
+plt.xticks(rotation=90)
+
+plt.title("Feature Distribution")
+
+plt.show()
+
+# ------------------------------------------
+# Correlation with Target
+# ------------------------------------------
+
+corr = df.corr(numeric_only=True)["class"].sort_values(ascending=False)
+
+print("\nCorrelation with Target\n")
+print(corr)
+
+# ------------------------------------------
+# Top 10 Correlated Features
+# ------------------------------------------
+
+plt.figure(figsize=(8,6))
+
+corr.drop("class").head(10).plot(kind="barh")
+
+plt.title("Top Positive Correlated Features")
+
+plt.show()
+
+# ------------------------------------------
+# Bottom 10 Correlated Features
+# ------------------------------------------
+
+plt.figure(figsize=(8,6))
+
+corr.drop("class").tail(10).plot(kind="barh")
+
+plt.title("Top Negative Correlated Features")
+
+plt.show()
+
+# ------------------------------------------
+# Prepare Data
+# ------------------------------------------
+
+X = df.drop("class", axis=1)
+
+y = df["class"]
+
+# ------------------------------------------
+# Split Dataset
+# ------------------------------------------
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
+)
+
+# ------------------------------------------
+# Train Model
+# ------------------------------------------
+
+model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+prediction = model.predict(X_test)
+
+# ------------------------------------------
+# Accuracy
+# ------------------------------------------
+
+accuracy = accuracy_score(y_test, prediction)
+
+print("\nAccuracy : {:.2f}%".format(accuracy*100))
+
+# ------------------------------------------
+# Classification Report
+# ------------------------------------------
+
+print("\nClassification Report\n")
+
+print(classification_report(y_test, prediction))
+
+# ------------------------------------------
+# Confusion Matrix
+# ------------------------------------------
+
+cm = confusion_matrix(y_test, prediction)
+
+plt.figure(figsize=(6,5))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues"
+)
+
+plt.xlabel("Predicted")
+
+plt.ylabel("Actual")
+
+plt.title("Confusion Matrix")
+
+plt.show()
+
+# ------------------------------------------
+# Feature Importance
+# ------------------------------------------
+
+importance = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": model.feature_importances_
+})
+
+importance = importance.sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print("\nTop 10 Important Features\n")
+
+print(importance.head(10))
+
+# ------------------------------------------
+# Feature Importance Graph
+# ------------------------------------------
+
+plt.figure(figsize=(10,7))
+
+sns.barplot(
+    data=importance.head(10),
+    x="Importance",
+    y="Feature"
+)
+
+plt.title("Top 10 Important Features")
+
+plt.show()
+
+# ------------------------------------------
+# Pair Plot (Top Features)
+# ------------------------------------------
+
+top_features = importance.head(4)["Feature"].tolist()
+
+top_features.append("class")
+
+sns.pairplot(df[top_features], hue="class")
+
+plt.show()
+
+# ------------------------------------------
+# Distribution Plot
+# ------------------------------------------
+
+for column in importance.head(5)["Feature"]:
+
+    plt.figure(figsize=(6,4))
+
+    sns.histplot(df[column], kde=True)
+
+    plt.title(column)
+
+    plt.show()
+
+print("\nProject Completed Successfully!")
